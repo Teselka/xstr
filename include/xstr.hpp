@@ -41,7 +41,7 @@
 
 #define XORSTR_KEYGEN(n) static_cast<const unsigned char>((__TIME__[7]-'0'+__COUNTER__)^n)
 
-namespace __xostr_impl
+namespace __xorstr_impl
 {
 #if !defined(XORSTR_CPP20)
 	namespace detail {
@@ -67,7 +67,7 @@ namespace __xostr_impl
 	struct string_lit {
 		template<typename T>
 		XORSTR_CONSTEXPR string_lit(T str) noexcept {
-#ifdef XORSTR_CPP20
+#ifdef XORSTR_CPP20	
 			for (unsigned long i = 0; i < n; i++)
 				v[i] = str[i] ^ key;
 #else
@@ -105,7 +105,7 @@ namespace __xostr_impl
 #if _DEBUG || DEBUG
 #define _x(s) s
 #else
-#define _x(s) __xostr_impl::make(s).dec()
+#define _x(s) __xorstr_impl::make(s).dec()
 #endif
 
 #endif
