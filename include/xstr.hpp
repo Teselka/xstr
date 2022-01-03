@@ -37,40 +37,47 @@ namespace __xorstr_impl
 {
 #if !defined(XORSTR_CPP20)
 	namespace detail {
-		template<const unsigned long n>
+		template<const unsigned long n, typename B>
 		struct xstr {
-			XORSTR_CONSTEXPR xstr(const char* str, char* dst, const unsigned char key) noexcept {
+			XORSTR_CONSTEXPR xstr(const B* str, B* dst, const unsigned char key) noexcept {
 				dst[n] = str[n] ^ key;
 
-				detail::xstr<n - 1>(str, dst, key);
+				detail::xstr<n - 1, B>(str, dst, key);
 			}
 		};
 
 		template<>
-		struct xstr<0> {
+		struct xstr<0, char> {
 			XORSTR_CONSTEXPR xstr(const char* str, char* dst, const unsigned char key) noexcept {
+				dst[0] = str[0] ^ key;
+			}
+		};
+
+		template<>
+		struct xstr<0, wchar_t> {
+			XORSTR_CONSTEXPR xstr(const wchar_t* str, wchar_t* dst, const unsigned char key) noexcept {
 				dst[0] = str[0] ^ key;
 			}
 		};
 	}
 #endif
 
-	template<const unsigned long n, const unsigned char key>
+	template<const unsigned long n, const unsigned char key, typename B>
 	struct string_lit {
 		template<typename T>
 		XORSTR_CONSTEXPR string_lit(T str) noexcept {
 #ifdef XORSTR_CPP20	
-			for (unsigned long i = 0; i < n; i++)
+			for (unsigned long i = 0; i<n; i++)
 				v[i] = str[i] ^ key;
 #else
-			detail::xstr<n-1>(str, v, key);
+			detail::xstr<n-1, B>(str, v, key);
 #endif 
 		}
 
-		char v[n];
+		B v[n];
 	};
 
-	template<const unsigned long n, const unsigned char key>
+	template<const unsigned long n, const unsigned char key, typename B>
 	class xstr 
 	{
 	public:
@@ -82,27 +89,36 @@ namespace __xorstr_impl
 #else
 		__attribute__((always_inline))
 #endif
-		const char* dec() noexcept {
+		const B* dec() noexcept {
 			buf.v[0] ^= key;
-			for (volatile auto i=1; i<n; i++)
-				buf.v[i] ^= key;
+			
+			volatile unsigned long i=1;
+			do {
+				buf.v[i++] ^= key;
+			} while(i<n-1);
+			buf.v[n-1] = '\0';
 
 			return buf.v;
 		}
 	private:
-		string_lit<n, key> buf;
+		string_lit<n, key, B> buf;
 	};
 
-	template<const unsigned long n>
+	template<const unsigned long cnt, const unsigned long n>
 	XORSTR_CONSTEXPR auto make(const char(&str)[n]) noexcept {
-		return xstr<n, static_cast<const unsigned char>((__TIME__[7] - '0' + __COUNTER__)^n)>(str);
+		return xstr<n, static_cast<const unsigned char>((__TIME__[7] - '0') ^ n+cnt), char>(str);
+	}
+
+	template<const unsigned long cnt, const unsigned long n>
+	XORSTR_CONSTEXPR auto make(const wchar_t(&str)[n]) noexcept {
+		return xstr<n, static_cast<const unsigned char>((__TIME__[7] - '0') ^ n + cnt), wchar_t>(str);
 	}
 }
 
 #if _DEBUG || DEBUG
 #define _x(s) s
 #else
-#define _x(s) __xorstr_impl::make(s).dec()
+#define _x(s) __xorstr_impl::make<__COUNTER__+__LINE__>(s).dec()
 #endif
 
 #undef XORSTR_CPP20
