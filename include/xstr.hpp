@@ -23,7 +23,14 @@
 #define XORSTR_FILE_HPP
 
 #if __cplusplus > 201703L
-#define XORSTR_CPP20
+#define XORSTR_CPPVERSION 20
+#elif __cplusplus == 201703L
+#define XORSTR_CPPVERSION 17
+#else
+#define XORSTR_CPPVERSION 0
+#endif
+
+#if XORSTR_CPPVERSION >= 20
 #define XORSTR_CONSTEXPR consteval
 #else
 #define XORSTR_CONSTEXPR constexpr
@@ -32,8 +39,8 @@
 namespace __xorstr_impl
 {
 	namespace detail {
-#if !defined(XORSTR_CPP20)
-		template<const unsigned long n, typename B>
+#if XORSTR_CPPVERSION < 20
+		template<const size_t n, typename B>
 		struct xstr {
 			XORSTR_CONSTEXPR xstr(const B* str, B* dst, const unsigned char key) noexcept {
 				dst[n] = str[n] ^ key;
@@ -58,7 +65,7 @@ namespace __xorstr_impl
 #endif
 
 		namespace hash {
-			template<typename T, unsigned long n>
+			template<typename T, size_t n>
 			XORSTR_CONSTEXPR unsigned long pjw(const T(&s)[n]) {
 				unsigned long h{}, high{};
 				unsigned long i = 0;
@@ -73,11 +80,11 @@ namespace __xorstr_impl
 		};
 	}
 
-	template<const unsigned long n, const unsigned char key, typename B>
+	template<const size_t n, const unsigned char key, typename B>
 	struct string_lit {
 		template<typename T>
 		XORSTR_CONSTEXPR string_lit(T str) noexcept {
-#ifdef XORSTR_CPP20	
+#if XORSTR_CPPVERSION >= 20	
 			for (unsigned long i = 0; i < n; i++)
 				v[i] = str[i] ^ key;
 #else
@@ -88,7 +95,7 @@ namespace __xorstr_impl
 		B v[n];
 	};
 
-	template<const unsigned long n, const unsigned char key, typename B>
+	template<const size_t n, const unsigned char key, typename B>
 	class xstr
 	{
 	public:
@@ -100,14 +107,14 @@ namespace __xorstr_impl
 #else
 		__attribute__((always_inline))
 #endif
-			const B* dec() noexcept {
-			buf.v[0] ^= key;
+		const B* dec() noexcept {
+			B* str = buf.v;
 
-			volatile unsigned long i = 1;
+			*str++ ^= key;
 			do {
-				buf.v[i++] ^= key;
-			} while (i < n - 1);
-			buf.v[n - 1] = '\0';
+				*str++ ^= key;
+			} while (str - static_cast<B*>(buf.v) < n-1);
+			*str = (B)'\0';
 
 			return buf.v;
 		}
@@ -115,9 +122,9 @@ namespace __xorstr_impl
 		string_lit<n, key, B> buf;
 	};
 
-	template<const unsigned long key, const unsigned long n, typename T>
+	template<const unsigned long key, const size_t n, typename T>
 	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
-		return xstr<n, static_cast<const T>(key), char>(str);
+		return xstr<n, static_cast<const T>(key), T>(str);
 	}
 }
 
@@ -127,7 +134,7 @@ namespace __xorstr_impl
 #define _x(s) __xorstr_impl::make<__xorstr_impl::detail::hash::pjw(__TIME__)>(s).dec()
 #endif
 
-#undef XORSTR_CPP20
+#undef XORSTR_CPPVERSION
 #undef XORSTR_CONSTEXPR
 
 #endif
