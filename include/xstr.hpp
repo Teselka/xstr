@@ -100,7 +100,9 @@ namespace __xorstr_impl
 	{
 	public:
 		template<typename T>
-		XORSTR_CONSTEXPR xstr(T str) noexcept : buf(str) {}
+		XORSTR_CONSTEXPR xstr(T str) noexcept : buf(str) {
+			static_assert(key != 0, "invalid xorstr key");
+		}
 
 #if _MSC_VER 
 		__forceinline
@@ -124,7 +126,7 @@ namespace __xorstr_impl
 
 	template<const unsigned long key, const unsigned long n, typename T>
 	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
-		return xstr<n, static_cast<const T>(key), T>(str);
+		return xstr<n, static_cast<const unsigned char>(key), T>(str);
 	}
 }
 
