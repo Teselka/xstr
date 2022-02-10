@@ -98,11 +98,10 @@ namespace __xorstr_impl
 	template<const unsigned long n, const unsigned char key, typename B>
 	class xstr
 	{
+		static_assert(key != 0, "invalid xorstr key");
 	public:
 		template<typename T>
-		XORSTR_CONSTEXPR xstr(T str) noexcept : buf(str) {
-			static_assert(key != 0, "invalid xorstr key");
-		}
+		XORSTR_CONSTEXPR xstr(T str) noexcept : buf(str) {}
 
 #if _MSC_VER 
 		__forceinline
