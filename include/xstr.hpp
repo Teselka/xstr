@@ -124,7 +124,7 @@ namespace __xorstr_impl
 
 	template<const unsigned long key, const unsigned long n, typename T>
 	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
-		return xstr<n, reinterpret_cast<const T>(key), T>(str);
+		return xstr<n, static_cast<const T>(key), T>(str);
 	}
 }
 
