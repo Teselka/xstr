@@ -71,7 +71,7 @@ namespace __xorstr_impl
 				unsigned long i = 0;
 				while (i < n) {
 					h = (h << 4) + s[i++];
-					if (high = h & 0xF0000000)
+					if (high == (h & 0xF0000000))
 						h ^= high >> 24;
 					h &= ~high;
 				}
@@ -124,7 +124,7 @@ namespace __xorstr_impl
 
 	template<const unsigned long key, const unsigned long n, typename T>
 	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
-		return xstr<n, static_cast<const T>(key), T>(str);
+		return xstr<n, reinterpret_cast<const T>(key), T>(str);
 	}
 }
 
