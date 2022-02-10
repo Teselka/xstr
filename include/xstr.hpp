@@ -40,7 +40,7 @@ namespace __xorstr_impl
 {
 	namespace detail {
 #if XORSTR_CPPVERSION < 20
-		template<const size_t n, typename B>
+		template<const unsigned long n, typename B>
 		struct xstr {
 			XORSTR_CONSTEXPR xstr(const B* str, B* dst, const unsigned char key) noexcept {
 				dst[n] = str[n] ^ key;
@@ -65,7 +65,7 @@ namespace __xorstr_impl
 #endif
 
 		namespace hash {
-			template<typename T, size_t n>
+			template<typename T, unsigned long n>
 			XORSTR_CONSTEXPR unsigned long pjw(const T(&s)[n]) {
 				unsigned long h{}, high{};
 				unsigned long i = 0;
@@ -80,7 +80,7 @@ namespace __xorstr_impl
 		};
 	}
 
-	template<const size_t n, const unsigned char key, typename B>
+	template<const unsigned long n, const unsigned char key, typename B>
 	struct string_lit {
 		template<typename T>
 		XORSTR_CONSTEXPR string_lit(T str) noexcept {
@@ -95,7 +95,7 @@ namespace __xorstr_impl
 		B v[n];
 	};
 
-	template<const size_t n, const unsigned char key, typename B>
+	template<const unsigned long n, const unsigned char key, typename B>
 	class xstr
 	{
 	public:
@@ -122,7 +122,7 @@ namespace __xorstr_impl
 		string_lit<n, key, B> buf;
 	};
 
-	template<const unsigned long key, const size_t n, typename T>
+	template<const unsigned long key, const unsigned long n, typename T>
 	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
 		return xstr<n, static_cast<const T>(key), T>(str);
 	}
