@@ -98,7 +98,18 @@ namespace __xorstr_impl
 		XORSTR_CONSTEXPR xstr(const T(&str)[n]) noexcept : buf(str) {}
 
 		XORSTR_FORCEINLINE const B* dec() noexcept {
-			B* str = buf.v;
+			B* str = buf.v;	
+
+			if constexpr (n >= sizeof(unsigned long)) {
+				unsigned long s=0, it=0; 
+				do {
+					constexpr unsigned long _key = (key << 24) + (key << 16) + (key << 8) + key;
+					reinterpret_cast<unsigned long*>(str)[it++] ^= _key;
+					s += sizeof(unsigned long);
+				} while (s < n);
+
+				str += s;
+			}
 
 			do {
 				*str++ ^= key;
