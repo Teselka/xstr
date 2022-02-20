@@ -112,12 +112,16 @@ namespace __xorstr_impl
 
 				str += s;
 			}
+
+			if ((size % sizeof(unsigned long)) > 0) {
 #endif
+				do {
+					*str++ ^= key;
+				} while (str - static_cast<B*>(buf.v) < n);
 
-			do {
-				*str++ ^= key;
-			} while (str - static_cast<B*>(buf.v) < n);
-
+#ifndef XORSTR_DISABLE_BIGSTR_OPT 
+			}
+#endif
 			return buf.v;
 		}
 	private:
