@@ -100,6 +100,7 @@ namespace __xorstr_impl
 		XORSTR_FORCEINLINE const B* dec() noexcept {
 			B* str = buf.v;	
 
+#ifndef XORSTR_DISABLE_BIGSTR_OPT
 			constexpr unsigned long size = n;
 			if (size >= sizeof(unsigned long)) {
 				unsigned long s=0, it=0; 
@@ -111,6 +112,7 @@ namespace __xorstr_impl
 
 				str += s;
 			}
+#endif
 
 			do {
 				*str++ ^= key;
