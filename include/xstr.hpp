@@ -30,48 +30,44 @@
 #define XORSTR_CPPVERSION 0
 #endif
 
+#if _MSC_VER 
+#define XORSTR_FORCEINLINE __forceinline
+#else
+#define XORSTR_FORCEINLINE __attribute__((always_inline))
+#endif
+
 #if XORSTR_CPPVERSION >= 20
 #define XORSTR_CONSTEXPR consteval
 #else
 #define XORSTR_CONSTEXPR constexpr
+#define XORSTR_ENCRYPTDEF(type) template<> struct xstr<type, 0> { XORSTR_FORCEINLINE XORSTR_CONSTEXPR xstr(const type* str, type* dst, const unsigned char key) noexcept { dst[0] = str[0] ^ key; } }
 #endif
 
 namespace __xorstr_impl
 {
 	namespace detail {
 #if XORSTR_CPPVERSION < 20
-		template<const unsigned long n, typename B>
+		template<typename T, const unsigned long n>
 		struct xstr {
-			XORSTR_CONSTEXPR xstr(const B* str, B* dst, const unsigned char key) noexcept {
+			XORSTR_FORCEINLINE XORSTR_CONSTEXPR xstr(const T* str, T* dst, const unsigned char key) noexcept {
 				dst[n] = str[n] ^ key;
 
-				detail::xstr<n - 1, B>(str, dst, key);
+				detail::xstr<T, n-1>(str, dst, key);
 			}
 		};
 
-		template<>
-		struct xstr<0, char> {
-			XORSTR_CONSTEXPR xstr(const char* str, char* dst, const unsigned char key) noexcept {
-				dst[0] = str[0] ^ key;
-			}
-		};
-
-		template<>
-		struct xstr<0, wchar_t> {
-			XORSTR_CONSTEXPR xstr(const wchar_t* str, wchar_t* dst, const unsigned char key) noexcept {
-				dst[0] = str[0] ^ key;
-			}
-		};
+		XORSTR_ENCRYPTDEF(char);
+		XORSTR_ENCRYPTDEF(wchar_t);
 #endif
 
 		namespace hash {
 			template<typename T, unsigned long n>
-			XORSTR_CONSTEXPR unsigned long pjw(const T(&s)[n]) {
+			XORSTR_FORCEINLINE static XORSTR_CONSTEXPR unsigned long pjw(const T(&s)[n]) noexcept {
 				unsigned long h{}, high{};
 				unsigned long i = 0;
 				while (i < n) {
 					h = (h << 4) + s[i++];
-					if (high == (h & 0xF0000000))
+					if ((high = h & 0xF0000000) != 0)
 						h ^= high >> 24;
 					h &= ~high;
 				}
@@ -80,42 +76,33 @@ namespace __xorstr_impl
 		};
 	}
 
-	template<const unsigned long n, const unsigned char key, typename B>
+	template<const unsigned long n, const unsigned char key, typename T>
 	struct string_lit {
-		template<typename T>
-		XORSTR_CONSTEXPR string_lit(T str) noexcept {
-#if XORSTR_CPPVERSION >= 20	
+		XORSTR_FORCEINLINE XORSTR_CONSTEXPR string_lit(const T(&str)[n]) noexcept {
+#if XORSTR_CPPVERSION >= 20
 			for (unsigned long i = 0; i < n; i++)
 				v[i] = str[i] ^ key;
 #else
-			detail::xstr<n - 1, B>(str, v, key);
+			detail::xstr<T, n-1>(str, v, key);
 #endif 
 		}
 
-		B v[n];
+		T v[n];
 	};
 
 	template<const unsigned long n, const unsigned char key, typename B>
 	class xstr
 	{
-		static_assert(key != 0, "invalid xorstr key");
 	public:
 		template<typename T>
-		XORSTR_CONSTEXPR xstr(T str) noexcept : buf(str) {}
+		XORSTR_CONSTEXPR xstr(const T(&str)[n]) noexcept : buf(str) {}
 
-#if _MSC_VER 
-		__forceinline
-#else
-		__attribute__((always_inline))
-#endif
-		const B* dec() noexcept {
+		XORSTR_FORCEINLINE const B* dec() noexcept {
 			B* str = buf.v;
 
-			*str++ ^= key;
 			do {
 				*str++ ^= key;
-			} while (str - static_cast<B*>(buf.v) < n-1);
-			*str = (B)'\0';
+			} while (str - static_cast<B*>(buf.v) < n);
 
 			return buf.v;
 		}
@@ -124,18 +111,21 @@ namespace __xorstr_impl
 	};
 
 	template<const unsigned long key, const unsigned long n, typename T>
-	XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
-		return xstr<n, static_cast<const unsigned char>(key), T>(str);
+	XORSTR_FORCEINLINE static XORSTR_CONSTEXPR auto make(const T(&str)[n]) noexcept {
+		constexpr const unsigned char _key = static_cast<const unsigned char>(key);
+		return xstr<n, !_key ? '\x45' : _key, T>(str);
 	}
 }
 
 #if _DEBUG || DEBUG
 #define _x(s) s
 #else
-#define _x(s) __xorstr_impl::make<__xorstr_impl::detail::hash::pjw(__TIME__)>(s).dec()
+#define _x(s) __xorstr_impl::make<__xorstr_impl::detail::hash::pjw(__TIME__)+__COUNTER__>(s).dec()
 #endif
 
 #undef XORSTR_CPPVERSION
 #undef XORSTR_CONSTEXPR
+#undef XORSTR_ENCRYPTDEF
+#undef XORSTR_FORCEINLINE
 
 #endif
