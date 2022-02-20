@@ -100,7 +100,8 @@ namespace __xorstr_impl
 		XORSTR_FORCEINLINE const B* dec() noexcept {
 			B* str = buf.v;	
 
-			if constexpr (n >= sizeof(unsigned long)) {
+			constexpr unsigned long size = n;
+			if (size >= sizeof(unsigned long)) {
 				unsigned long s=0, it=0; 
 				do {
 					constexpr unsigned long _key = (key << 24) + (key << 16) + (key << 8) + key;
