@@ -2,10 +2,34 @@
 ```cpp
 auto str = _x("my awesome string!");
 ```
-
-
+  
 <details>
-  <summary>IDA 7.6 decompiled</summary>
+    <summary>IDA 7.6 decompiled</summary>
+  
+    ```cpp
+    v3 = v8;
+    qmemcpy(v8, "=)p1'5#?=5p#$\"9>7qP", sizeof(v8));
+    v4 = 5;
+    do
+    {
+      *v3++ ^= 0x50505050u;
+      --v4;
+    }
+    while ( v4 );
+    v5 = &v9;
+    v6 = 20;
+    do
+    {
+      *v5++ ^= 0x50u;
+      ++v6;
+    }
+    while ( v6 < 0x13 );
+    ```
+  
+</details>
+  
+<details>
+  <summary>IDA 7.6 decompiled (no big string optimization)</summary>
   
   ```cpp
   v3 = &v6;
@@ -23,6 +47,8 @@ auto str = _x("my awesome string!");
   ```
 </details>
 
+## Preprocessor
+`XORSTR_DISABLE_BIGSTR_OPT` - disables big string optimization, used to make output smaller
 
 ## Information
 Compile-time string encryption.
