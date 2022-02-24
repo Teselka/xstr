@@ -102,18 +102,18 @@ namespace __xorstr_impl
 
 #ifndef XORSTR_DISABLE_BIGSTR_OPT
 			constexpr unsigned long size = n;
-			if (size >= sizeof(unsigned long)) {
-				unsigned long s=0, it=0; 
+			if (size >= sizeof(unsigned long) && size >= 64) {
+				unsigned long s=0, it=0;
+				constexpr unsigned long _key = (key << 24) + (key << 16) + (key << 8) + key;
 				do {
-					constexpr unsigned long _key = (key << 24) + (key << 16) + (key << 8) + key;
 					reinterpret_cast<unsigned long*>(str)[it++] ^= _key;
 					s += sizeof(unsigned long);
 				} while (s < n);
 
 				str += s;
 			}
-
-			if ((size % sizeof(unsigned long)) > 0) {
+			
+			if ((size % sizeof(unsigned long)) > 0 || size < 64) {
 #endif
 				do {
 					*str++ ^= key;
