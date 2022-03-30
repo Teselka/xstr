@@ -67,11 +67,11 @@ namespace _xsimpl
 #endif
 
 		template<typename T, const T key>
-		XORSTR_FORCEINLINE XORSTR_CONSTEXPR const T key_shift(const T x = key, const xsize_t n=sizeof(T)) noexcept {
+		XORSTR_FORCEINLINE XORSTR_CONSTEXPR const T key_shift(const T x = key, const xsize_t n = sizeof(T)) noexcept {
 			if (n == 1)
 				return x;
 
-			return key_shift<T, key>(x + (key << ((n-1) * 8)), n-1);
+			return key_shift<T, key>(x + (key << ((n - 1) * 8)), n - 1);
 		}
 
 		namespace hash {
@@ -130,27 +130,33 @@ namespace _xsimpl
 			B* str = buf.v;
 
 			//constexpr unsigned long size = n;
-			if XORSTR_IFCONSTEXPR (sizeof(T) <= sizeof(void*) &&
+			if XORSTR_IFCONSTEXPR(sizeof(T) <= sizeof(void*) &&
 #ifdef XORSTR_DISABLE_OPTIMIZATION
-					(n % sizeof(T)) == 0
+			(n % sizeof(T)) == 0
 #else
-					n >= sizeof(T)
+				n >= sizeof(T)
 #endif
-				) {
+			) {
 
 				constexpr const T k = detail::key_shift<T, static_cast<T>(key)>();
 #ifndef XORSTR_DISABLE_OPTIMIZATION
 				volatile T i = 0;
 #endif
 				do {
-					*reinterpret_cast<T*>(str) ^= k;
-					str += sizeof(T);
+					reinterpret_cast<T*>(str)[i++] ^= k;
+#ifndef XORSTR_DISABLE_OPTIMIZATION
+					if XORSTR_IFCONSTEXPR(n % sizeof(T) > 0) {
+#endif
+						str += sizeof(T);
+#ifndef XORSTR_DISABLE_OPTIMIZATION
+					}
+#endif
 #ifdef XORSTR_DISABLE_OPTIMIZATION
 				} while (str - static_cast<B*>(buf.v) < n);
 #else
-				} while (i < (const int)(n/sizeof(T)));
+				} while (i < (const int)(n / sizeof(T)));
 
-				if XORSTR_IFCONSTEXPR (n % sizeof(T) > 0) {
+				if XORSTR_IFCONSTEXPR(n % sizeof(T) > 0) {
 					do {
 						*str++ ^= key;
 					} while (str - static_cast<B*>(buf.v) < n);
