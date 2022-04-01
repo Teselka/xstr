@@ -19,7 +19,6 @@
 */
 
 #pragma once
-
 #if __cplusplus > 201703L
 #define XORSTR_CPPVERSION 20
 #elif __cplusplus == 201703L
@@ -132,7 +131,7 @@ namespace _xsimpl
 			//constexpr unsigned long size = n;
 			if XORSTR_IFCONSTEXPR(sizeof(T) <= sizeof(void*) &&
 #ifdef XORSTR_DISABLE_OPTIMIZATION
-			(n % sizeof(T)) == 0
+				(n % sizeof(T)) == 0
 #else
 				n >= sizeof(T)
 #endif
@@ -141,10 +140,13 @@ namespace _xsimpl
 				constexpr const T k = detail::key_shift<T, static_cast<T>(key)>();
 #ifndef XORSTR_DISABLE_OPTIMIZATION
 				volatile T i = 0;
+				constexpr const xsize_t to = (n / sizeof(T));
 #endif
 				do {
+#ifdef XORSTR_DISABLE_OPTIMIZATION
+					*reinterpret_cast<T*>(str) ^= k;
+#else
 					reinterpret_cast<T*>(str)[i++] ^= k;
-#ifndef XORSTR_DISABLE_OPTIMIZATION
 					if XORSTR_IFCONSTEXPR(n % sizeof(T) > 0) {
 #endif
 						str += sizeof(T);
@@ -154,12 +156,14 @@ namespace _xsimpl
 #ifdef XORSTR_DISABLE_OPTIMIZATION
 				} while (str - static_cast<B*>(buf.v) < n);
 #else
-				} while (i < (const int)(n / sizeof(T)));
+				} while (i < to);
 
 				if XORSTR_IFCONSTEXPR(n % sizeof(T) > 0) {
+					xsize_t j = (to-1)*sizeof(T);
 					do {
 						*str++ ^= key;
-					} while (str - static_cast<B*>(buf.v) < n);
+						j++;
+					} while (j < n);
 				}
 #endif
 				return true;
